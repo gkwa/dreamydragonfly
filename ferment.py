@@ -139,6 +139,8 @@ def main() -> int:
     elapsed_end = end if end is not None else now_utc
     elapsed_min = round((elapsed_end - args.start).total_seconds() / 60)
     elapsed = f"{elapsed_min // 60}h{elapsed_min % 60:02d}m"
+    data_min = round((progress.last_reading_at - args.start).total_seconds() / 60)
+    data_elapsed = f"{data_min // 60}h{data_min % 60:02d}m"
     age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
     age_str = f"{age_min // 60}h{age_min % 60:02d}m ago" if age_min >= 60 else f"{age_min}m ago"
 
@@ -173,6 +175,7 @@ def main() -> int:
     primary = [
         ("bulk start", start_local),
         ("elapsed", elapsed),
+        ("data elapsed", data_elapsed),
         (f"temp ({age_str})", f"{progress.current_temp_f:.1f}°F"),
         ("avg temp", f"{progress.avg_temp_f:.1f}°F"),
         ("est. rise", f"{progress.est_rise_pct:.0f}%"),
