@@ -76,11 +76,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help='when bulk fermentation ended, e.g. "2026-03-01 8pm", "yesterday 9pm", or a duration from start like "11h"',
     )
     parser.add_argument(
-        "--parquet",
+        "--parquet-path",
         required=True,
         type=pathlib.Path,
-        metavar="PATH",
-        help="path to sensor parquet file",
+        metavar="PARQUET_PATH",
+        help="path to sensor parquet file, e.g. /path/to/kindfinkitten/merged_data.parquet",
     )
     parser.add_argument(
         "--meta",
@@ -114,11 +114,11 @@ def main() -> int:
     log_level = {0: logging.WARNING, 1: logging.INFO}.get(args.verbose, logging.DEBUG)
     logging.basicConfig(level=log_level, stream=sys.stderr, format="%(levelname)s %(message)s")
 
-    log.info("loading parquet from %s", args.parquet)
+    log.info("loading parquet from %s", args.parquet_path)
 
     end = _resolve_end(args.end, args.start) if args.end else None
 
-    sensor = sensor_module.SensorData(args.parquet)
+    sensor = sensor_module.SensorData(args.parquet_path)
     readings = sensor.readings_since(args.start, end)
 
     if len(readings) == 0:
