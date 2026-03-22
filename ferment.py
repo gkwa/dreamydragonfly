@@ -136,8 +136,9 @@ def main() -> int:
 
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     start_local = args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %H:%M %Z")
-    total_min = round(progress.elapsed_hours * 60)
-    elapsed = f"{total_min // 60}h{total_min % 60:02d}m"
+    elapsed_end = end if end is not None else now_utc
+    elapsed_min = round((elapsed_end - args.start).total_seconds() / 60)
+    elapsed = f"{elapsed_min // 60}h{elapsed_min % 60:02d}m"
     age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
     age_str = f"{age_min // 60}h{age_min % 60:02d}m ago" if age_min >= 60 else f"{age_min}m ago"
 
