@@ -12,6 +12,7 @@ import dateparser
 
 import calculator as fermentation_calculator
 import dough as dough_module
+import duration as duration_module
 import sensor as sensor_module
 
 PARQUET_PATH = pathlib.Path(
@@ -36,6 +37,30 @@ def _parse_start(value: str) -> datetime.datetime:
     return parsed
 
 
+def _resolve_end(value: str, start: datetime.datetime) -> datetime.datetime:
+    """
+    Parse --end as either a duration offset from start (e.g. '11h') or an
+    absolute/relative datetime (e.g. '2026-03-01 8pm', 'yesterday 9pm').
+    Duration is tried first.
+    """
+    try:
+        delta = duration_module.parse_duration(value)
+        return start + delta
+    except ValueError:
+        pass
+    parsed = dateparser.parse(
+        value,
+        settings={
+            "RETURN_AS_TIMEZONE_AWARE": True,
+            "PREFER_DAY_OF_MONTH": "first",
+            "TIMEZONE": "America/Los_Angeles",
+        },
+    )
+    if parsed is None:
+        raise argparse.ArgumentTypeError(f"cannot parse end time: {value!r}")
+    return parsed
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Report bulk fermentation progress based on temperature sensor data.",
@@ -46,6 +71,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=_parse_start,
         metavar="TIME",
         help='when bulk fermentation began, e.g. "today 8am", "3 hours ago", "2026-01-22 11:09"',
+    )
+    parser.add_argument(
+        "--end",
+        default=None,
+        metavar="TIME",
+        help='when bulk fermentation ended, e.g. "2026-03-01 8pm", "yesterday 9pm", or a duration from start like "11h"',
     )
     parser.add_argument(
         "--parquet",
@@ -88,8 +119,10 @@ def main() -> int:
 
     log.info("loading parquet from %s", args.parquet)
 
+    end = _resolve_end(args.end, args.start) if args.end else None
+
     sensor = sensor_module.SensorData(args.parquet)
-    readings = sensor.readings_since(args.start)
+    readings = sensor.readings_since(args.start, end)
 
     if len(readings) == 0:
         print(
