@@ -116,6 +116,10 @@ def main() -> int:
     _print_rows(primary)
 
     if args.meta:
+        ref_hours = subject.expected_hours(progress.avg_temp_f)
+        ref_min = round(ref_hours * 60)
+        ref_duration = f"{ref_min // 60}h{ref_min % 60:02d}m"
+
         print()
         meta = [
             ("run at", now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")),
@@ -124,6 +128,7 @@ def main() -> int:
             ("readings", str(progress.reading_count)),
             ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
             ("integral", f"{progress.integral:.4f}"),
+            ("ref. duration", f"{ref_duration} (author's estimate at {progress.avg_temp_f:.1f}°F)"),
         ]
         _print_rows(meta)
 
