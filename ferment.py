@@ -77,10 +77,14 @@ def main() -> int:
     total_min = round(progress.elapsed_hours * 60)
     elapsed = f"{total_min // 60}h{total_min % 60:02d}m"
 
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
+    temp_label = f"temp ({age_min}m ago)"
+
     print(
         f"bulk start:  {start_local}\n"
         f"elapsed:     {elapsed}\n"
-        f"temp now:    {progress.current_temp_f:.1f}°F\n"
+        f"{temp_label}:  {progress.current_temp_f:.1f}°F\n"
         f"avg temp:    {progress.avg_temp_f:.1f}°F\n"
         f"target rise: {progress.target_rise_pct:.0f}%"
     )
