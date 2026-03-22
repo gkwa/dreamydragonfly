@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import logging
 import pathlib
 import sys
 import zoneinfo
@@ -15,8 +16,9 @@ import sensor as sensor_module
 PARQUET_PATH = pathlib.Path(
     "/Users/mtm/pdev/taylormonacelli/kindfinkitten/merged_data.parquet"
 )
-DEFAULT_DURATION_DISPLAY = "36h"
 LOCAL_TZ = zoneinfo.ZoneInfo("America/Los_Angeles")
+
+log = logging.getLogger(__name__)
 
 
 def _parse_start(value: str) -> datetime.datetime:
@@ -31,7 +33,6 @@ def _parse_start(value: str) -> datetime.datetime:
     if parsed is None:
         raise argparse.ArgumentTypeError(f"cannot parse date/time: {value!r}")
     return parsed
-
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -52,12 +53,34 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help=f"path to sensor parquet file (default: {PARQUET_PATH})",
     )
+    parser.add_argument(
+        "--meta",
+        action="store_true",
+        help="show additional metadata below the primary output",
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="count",
+        default=0,
+        help="increase log verbosity (-v for INFO, -vv for DEBUG)",
+    )
     return parser
+
+
+def _print_rows(rows: list[tuple[str, str]]) -> None:
+    width = max(len(label) for label, _ in rows) + 1
+    for label, value in rows:
+        print(f"{label + ':':{width}}  {value}")
 
 
 def main() -> int:
     parser = _build_parser()
     args = parser.parse_args()
+
+    log_level = {0: logging.WARNING, 1: logging.INFO}.get(args.verbose, logging.DEBUG)
+    logging.basicConfig(level=log_level, stream=sys.stderr, format="%(levelname)s %(message)s")
+
+    log.info("loading parquet from %s", args.parquet)
 
     sensor = sensor_module.SensorData(args.parquet)
     readings = sensor.readings_since(args.start)
@@ -69,19 +92,20 @@ def main() -> int:
         )
         return 1
 
+    log.info("computing fermentation progress from %d readings", len(readings))
+
     subject = dough_module.DoughFermentation()
     calc = fermentation_calculator.FermentationCalculator(subject)
     progress = calc.compute(readings)
 
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
     start_local = args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %H:%M %Z")
     total_min = round(progress.elapsed_hours * 60)
     elapsed = f"{total_min // 60}h{total_min % 60:02d}m"
-
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
     age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
     age_str = f"{age_min // 60}h{age_min % 60:02d}m ago" if age_min >= 60 else f"{age_min}m ago"
 
-    rows = [
+    primary = [
         ("bulk start", start_local),
         ("elapsed", elapsed),
         (f"temp ({age_str})", f"{progress.current_temp_f:.1f}°F"),
@@ -89,9 +113,20 @@ def main() -> int:
         ("est. rise", f"{progress.est_rise_pct:.0f}%"),
         ("target rise", f"{progress.target_rise_pct:.0f}%"),
     ]
-    width = max(len(label) for label, _ in rows) + 1
-    for label, value in rows:
-        print(f"{label + ':':{width}}  {value}")
+    _print_rows(primary)
+
+    if args.meta:
+        print()
+        meta = [
+            ("run at", now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")),
+            ("bulk start ISO", args.start.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
+            ("last reading ISO", progress.last_reading_at.strftime("%Y-%m-%dT%H:%M:%SZ")),
+            ("readings", str(progress.reading_count)),
+            ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
+            ("integral", f"{progress.integral:.4f}"),
+        ]
+        _print_rows(meta)
+
     return 0
 
 
