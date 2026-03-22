@@ -15,9 +15,6 @@ import dough as dough_module
 import duration as duration_module
 import sensor as sensor_module
 
-PARQUET_PATH = pathlib.Path(
-    "/Users/mtm/pdev/taylormonacelli/kindfinkitten/merged_data.parquet"
-)
 LOCAL_TZ = zoneinfo.ZoneInfo("America/Los_Angeles")
 
 log = logging.getLogger(__name__)
@@ -80,10 +77,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--parquet",
+        required=True,
         type=pathlib.Path,
-        default=PARQUET_PATH,
         metavar="PATH",
-        help=f"path to sensor parquet file (default: {PARQUET_PATH})",
+        help="path to sensor parquet file",
     )
     parser.add_argument(
         "--meta",
