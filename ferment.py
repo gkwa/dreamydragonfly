@@ -33,19 +33,6 @@ def _parse_start(value: str) -> datetime.datetime:
     return parsed
 
 
-def _fmt_hours(h: float) -> str:
-    total_min = round(h * 60)
-    d, rem = divmod(total_min, 1440)
-    hh, mm = divmod(rem, 60)
-    parts = []
-    if d:
-        parts.append(f"{d}d")
-    if hh:
-        parts.append(f"{hh}h")
-    if mm or not parts:
-        parts.append(f"{mm}m")
-    return "".join(parts)
-
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -87,20 +74,15 @@ def main() -> int:
     progress = calc.compute(readings)
 
     start_local = args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %H:%M %Z")
-    remaining = (
-        f"~{_fmt_hours(progress.est_remaining_hours)} remaining"
-        if progress.est_remaining_hours is not None
-        else "past expected completion"
-    )
+    total_min = round(progress.elapsed_hours * 60)
+    elapsed = f"{total_min // 60}h{total_min % 60:02d}m"
 
     print(
-        f"bulk start:    {start_local}\n"
-        f"elapsed:       {_fmt_hours(progress.elapsed_hours)}\n"
-        f"temp now:      {progress.current_temp_f:.1f}°F\n"
-        f"avg temp:      {progress.avg_temp_f:.1f}°F\n"
-        f"target rise:   {progress.target_rise_pct:.0f}%\n"
-        f"progress:      {progress.progress_pct:.0f}%\n"
-        f"estimate:      {remaining}"
+        f"bulk start:  {start_local}\n"
+        f"elapsed:     {elapsed}\n"
+        f"temp now:    {progress.current_temp_f:.1f}°F\n"
+        f"avg temp:    {progress.avg_temp_f:.1f}°F\n"
+        f"target rise: {progress.target_rise_pct:.0f}%"
     )
     return 0
 

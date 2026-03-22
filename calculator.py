@@ -14,7 +14,6 @@ class FermentationProgress:
     current_temp_f: float
     target_rise_pct: float
     progress_pct: float
-    est_remaining_hours: float | None  # None means past expected completion
 
 
 class FermentationCalculator:
@@ -59,15 +58,10 @@ class FermentationCalculator:
         target_rise = self._subject.target_rise_pct(avg_temp_f)
         progress_pct = min(accumulated * 100.0, 100.0)
 
-        remaining_fraction = max(0.0, 1.0 - accumulated)
-        current_rate = 1.0 / self._subject.expected_hours(current_temp_f)
-        est_remaining = (remaining_fraction / current_rate) if remaining_fraction > 0 else None
-
         return FermentationProgress(
             elapsed_hours=total_seconds / 3600.0,
             avg_temp_f=avg_temp_f,
             current_temp_f=current_temp_f,
             target_rise_pct=target_rise,
             progress_pct=progress_pct,
-            est_remaining_hours=est_remaining,
         )
