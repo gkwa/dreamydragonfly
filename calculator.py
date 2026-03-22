@@ -15,7 +15,7 @@ class FermentationProgress:
     current_temp_f: float
     last_reading_at: datetime.datetime
     target_rise_pct: float
-    progress_pct: float
+    est_rise_pct: float
 
 
 class FermentationCalculator:
@@ -59,7 +59,7 @@ class FermentationCalculator:
         current_temp_f = float(rows[-1]["temperature_f"])
         last_reading_at = rows[-1]["datetime"]
         target_rise = self._subject.target_rise_pct(avg_temp_f)
-        progress_pct = min(accumulated * 100.0, 100.0)
+        est_rise_pct = min(accumulated * target_rise, target_rise)
 
         return FermentationProgress(
             elapsed_hours=total_seconds / 3600.0,
@@ -67,5 +67,5 @@ class FermentationCalculator:
             current_temp_f=current_temp_f,
             last_reading_at=last_reading_at,
             target_rise_pct=target_rise,
-            progress_pct=progress_pct,
+            est_rise_pct=est_rise_pct,
         )

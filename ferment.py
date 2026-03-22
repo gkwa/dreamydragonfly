@@ -86,6 +86,7 @@ def main() -> int:
         ("elapsed", elapsed),
         (f"temp ({age_str})", f"{progress.current_temp_f:.1f}°F"),
         ("avg temp", f"{progress.avg_temp_f:.1f}°F"),
+        ("est. rise", f"{progress.est_rise_pct:.0f}%"),
         ("target rise", f"{progress.target_rise_pct:.0f}%"),
     ]
     width = max(len(label) for label, _ in rows) + 1
