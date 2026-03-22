@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import json
 import logging
 import pathlib
 import sys
@@ -59,6 +60,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="show additional metadata below the primary output",
     )
     parser.add_argument(
+        "--json",
+        action="store_true",
+        help="output as JSON instead of human-readable table",
+    )
+    parser.add_argument(
         "--verbose", "-v",
         action="count",
         default=0,
@@ -105,6 +111,34 @@ def main() -> int:
     age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
     age_str = f"{age_min // 60}h{age_min % 60:02d}m ago" if age_min >= 60 else f"{age_min}m ago"
 
+    ref_hours = subject.expected_hours(progress.avg_temp_f)
+
+    if args.json:
+        payload: dict = {
+            "bulk_start": args.start.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "elapsed_min": round(progress.elapsed_hours * 60),
+            "temp_f": progress.current_temp_f,
+            "temp_age_min": age_min,
+            "avg_temp_f": round(progress.avg_temp_f, 1),
+            "est_rise_pct": round(progress.est_rise_pct),
+            "target_rise_pct": round(progress.target_rise_pct),
+        }
+        if args.meta:
+            diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
+            payload["meta"] = {
+                "run_at": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "last_reading_iso": progress.last_reading_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "readings": progress.reading_count,
+                "min_temp_f": progress.min_temp_f,
+                "max_temp_f": progress.max_temp_f,
+                "integral": round(progress.integral, 4),
+                "ref_duration_min": round(ref_hours * 60),
+                "ref_offset_min": diff_min,
+                "ref_offset_direction": "under" if progress.elapsed_hours < ref_hours else "over",
+            }
+        print(json.dumps(payload))
+        return 0
+
     primary = [
         ("bulk start", start_local),
         ("elapsed", elapsed),
@@ -116,7 +150,6 @@ def main() -> int:
     _print_rows(primary)
 
     if args.meta:
-        ref_hours = subject.expected_hours(progress.avg_temp_f)
         ref_min = round(ref_hours * 60)
         ref_duration = f"{ref_min // 60}h{ref_min % 60:02d}m"
         diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
