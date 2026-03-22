@@ -79,15 +79,18 @@ def main() -> int:
 
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
-    temp_label = f"temp ({age_min}m ago)"
+    age_str = f"{age_min // 60}h{age_min % 60:02d}m ago" if age_min >= 60 else f"{age_min}m ago"
 
-    print(
-        f"bulk start:  {start_local}\n"
-        f"elapsed:     {elapsed}\n"
-        f"{temp_label}:  {progress.current_temp_f:.1f}°F\n"
-        f"avg temp:    {progress.avg_temp_f:.1f}°F\n"
-        f"target rise: {progress.target_rise_pct:.0f}%"
-    )
+    rows = [
+        ("bulk start", start_local),
+        ("elapsed", elapsed),
+        (f"temp ({age_str})", f"{progress.current_temp_f:.1f}°F"),
+        ("avg temp", f"{progress.avg_temp_f:.1f}°F"),
+        ("target rise", f"{progress.target_rise_pct:.0f}%"),
+    ]
+    width = max(len(label) for label, _ in rows) + 1
+    for label, value in rows:
+        print(f"{label + ':':{width}}  {value}")
     return 0
 
 
