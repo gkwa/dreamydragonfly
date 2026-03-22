@@ -115,26 +115,26 @@ def main() -> int:
 
     if args.json:
         payload: dict = {
-            "bulk_start": args.start.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "elapsed_min": round(progress.elapsed_hours * 60),
-            "temp_f": progress.current_temp_f,
-            "temp_age_min": age_min,
+            "bulk_start_iso": args.start.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "elapsed_minutes": round(progress.elapsed_hours * 60),
+            "last_temp_f": progress.current_temp_f,
+            "last_temp_age_minutes": age_min,
             "avg_temp_f": round(progress.avg_temp_f, 1),
-            "est_rise_pct": round(progress.est_rise_pct),
+            "estimated_rise_pct": round(progress.est_rise_pct),
             "target_rise_pct": round(progress.target_rise_pct),
         }
         if args.meta:
             diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
             payload["meta"] = {
-                "run_at": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "run_at_iso": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "last_reading_iso": progress.last_reading_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "readings": progress.reading_count,
+                "temperature_reading_count": progress.reading_count,
                 "min_temp_f": progress.min_temp_f,
                 "max_temp_f": progress.max_temp_f,
-                "integral": round(progress.integral, 4),
-                "ref_duration_min": round(ref_hours * 60),
-                "ref_offset_min": diff_min,
-                "ref_offset_direction": "under" if progress.elapsed_hours < ref_hours else "over",
+                "fermentation_integral": round(progress.integral, 4),
+                "reference_duration_minutes": round(ref_hours * 60),
+                "reference_offset_minutes": diff_min,
+                "reference_offset_direction": "under" if progress.elapsed_hours < ref_hours else "over",
             }
         print(json.dumps(payload))
         return 0
