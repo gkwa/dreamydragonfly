@@ -101,6 +101,11 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _fmt_hm(total_minutes: int) -> str:
+    h, m = divmod(total_minutes, 60)
+    return f"{h}h{m}m" if m else f"{h}h"
+
+
 def _print_rows(rows: list[tuple[str, str]]) -> None:
     width = max(len(label) for label, _ in rows) + 1
     for label, value in rows:
@@ -138,9 +143,9 @@ def main() -> int:
     start_local = args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %H:%M %Z")
     elapsed_end = end if end is not None else now_utc
     elapsed_min = round((elapsed_end - args.start).total_seconds() / 60)
-    elapsed = f"{elapsed_min // 60}h{elapsed_min % 60:2d}m"
+    elapsed = _fmt_hm(elapsed_min)
     data_min = round((progress.last_reading_at - args.start).total_seconds() / 60)
-    data_elapsed = f"{data_min // 60}h{data_min % 60:2d}m"
+    data_elapsed = _fmt_hm(data_min)
     age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
     age_str = f"{age_min // 60}h{age_min % 60:2d}m ago" if age_min >= 60 else f"{age_min}m ago"
 
@@ -185,17 +190,17 @@ def main() -> int:
 
     if args.meta:
         ref_min = round(ref_hours * 60)
-        ref_duration = f"{ref_min // 60}h{ref_min % 60:2d}m"
+        ref_duration = _fmt_hm(ref_min)
         ref_end_abs = args.start + datetime.timedelta(hours=ref_hours)
         ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %H:%M %Z")
 
         data_diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
-        data_diff_str = f"{data_diff_min // 60}h{data_diff_min % 60:2d}m"
+        data_diff_str = _fmt_hm(data_diff_min)
         data_offset = f"{data_diff_str} under" if progress.elapsed_hours < ref_hours else f"{data_diff_str} over"
 
         wall_elapsed_hours = elapsed_min / 60
         wall_diff_min = abs(round((ref_hours - wall_elapsed_hours) * 60))
-        wall_diff_str = f"{wall_diff_min // 60}h{wall_diff_min % 60:2d}m"
+        wall_diff_str = _fmt_hm(wall_diff_min)
         wall_offset = f"{wall_diff_str} under" if wall_elapsed_hours < ref_hours else f"{wall_diff_str} over"
 
         print()
