@@ -126,7 +126,7 @@ def main() -> int:
 
     if len(readings) == 0:
         print(
-            f"no sensor readings found since {args.start.astimezone(LOCAL_TZ).strftime('%Y-%m-%d %-I:%M %p %Z')}",
+            f"no sensor readings found since {args.start.astimezone(LOCAL_TZ).strftime('%Y-%m-%d %a %-I:%M %p %Z')}",
             file=sys.stderr,
         )
         return 1
@@ -138,7 +138,7 @@ def main() -> int:
     progress = calc.compute(readings)
 
     now_utc = datetime.datetime.now(datetime.timezone.utc)
-    start_local = args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M %p %Z")
+    start_local = args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z")
     elapsed_end = end if end is not None else now_utc
     elapsed_min = round((elapsed_end - args.start).total_seconds() / 60)
     elapsed = _fmt_hm(elapsed_min)
@@ -151,7 +151,7 @@ def main() -> int:
 
     if args.json:
         payload: dict = {
-            "bulk_start_iso": args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M:%S %p %Z"),
+            "bulk_start_iso": args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z"),
             "elapsed_minutes": round(progress.elapsed_hours * 60),
             "last_temp_f": progress.current_temp_f,
             "last_temp_age_minutes": age_min,
@@ -162,8 +162,8 @@ def main() -> int:
         if args.meta:
             diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
             payload["meta"] = {
-                "run_at_iso": now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M:%S %p %Z"),
-                "last_reading_iso": progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M:%S %p %Z"),
+                "run_at_iso": now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z"),
+                "last_reading_iso": progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z"),
                 "temperature_reading_count": progress.reading_count,
                 "min_temp_f": progress.min_temp_f,
                 "max_temp_f": progress.max_temp_f,
@@ -190,7 +190,7 @@ def main() -> int:
         ref_min = round(ref_hours * 60)
         ref_duration = _fmt_hm(ref_min)
         ref_end_abs = args.start + datetime.timedelta(hours=ref_hours)
-        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M %p %Z")
+        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z")
 
         data_diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
         data_diff_str = _fmt_hm(data_diff_min)
@@ -203,9 +203,9 @@ def main() -> int:
 
         print()
         meta = [
-            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M:%S %p %Z")),
-            ("bulk start ISO", args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M:%S %p %Z")),
-            ("last reading ISO", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M:%S %p %Z")),
+            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z")),
+            ("bulk start ISO", args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z")),
+            ("last reading ISO", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z")),
             ("readings", str(progress.reading_count)),
             ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
             ("integral", f"{progress.integral:.4f}"),
