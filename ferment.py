@@ -193,7 +193,7 @@ def main() -> int:
     ]
     if args.volume is not None:
         target_volume = args.volume * (1 + progress.target_rise_pct / 100)
-        primary.append(("target volume", f"{args.volume:.0f} → {target_volume:.0f} mL"))
+        primary.append(("target volume", f"{args.volume:.0f} rises to {target_volume:.0f} mL"))
     _print_rows(primary)
 
     if args.meta:
