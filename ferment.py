@@ -192,7 +192,7 @@ def main() -> int:
         ref_min = round(ref_hours * 60)
         ref_duration = _fmt_hm(ref_min)
         ref_end_abs = args.start + datetime.timedelta(hours=ref_hours)
-        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %H:%M %Z")
+        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %-I:%M %p %Z")
 
         data_diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
         data_diff_str = _fmt_hm(data_diff_min)
@@ -205,9 +205,9 @@ def main() -> int:
 
         print()
         meta = [
-            ("run at", now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")),
-            ("bulk start ISO", args.start.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
-            ("last reading ISO", progress.last_reading_at.strftime("%Y-%m-%dT%H:%M:%SZ")),
+            ("run at", now_utc.astimezone(LOCAL_TZ).isoformat(timespec="seconds")),
+            ("bulk start ISO", args.start.astimezone(LOCAL_TZ).isoformat(timespec="seconds")),
+            ("last reading ISO", progress.last_reading_at.astimezone(LOCAL_TZ).isoformat(timespec="seconds")),
             ("readings", str(progress.reading_count)),
             ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
             ("integral", f"{progress.integral:.4f}"),
