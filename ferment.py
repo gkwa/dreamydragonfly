@@ -190,7 +190,7 @@ def main() -> int:
         ref_min = round(ref_hours * 60)
         ref_duration = _fmt_hm(ref_min)
         ref_end_abs = args.start + datetime.timedelta(hours=ref_hours)
-        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z")
+        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")
 
         data_diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
         data_diff_str = _fmt_hm(data_diff_min)
@@ -203,9 +203,9 @@ def main() -> int:
 
         print()
         meta = [
-            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z")),
-            ("bulk start ISO", args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z")),
-            ("last reading ISO", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z")),
+            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M:%S %p %Z")),
+            ("bulk start ISO", args.start.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M:%S %p %Z")),
+            ("last reading ISO", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M:%S %p %Z")),
             ("readings", str(progress.reading_count)),
             ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
             ("integral", f"{progress.integral:.4f}"),
