@@ -91,6 +91,13 @@ def _build_parser() -> argparse.ArgumentParser:
         help="output as JSON instead of human-readable table",
     )
     parser.add_argument(
+        "--volume",
+        default=None,
+        type=float,
+        metavar="ML",
+        help="initial dough volume in mL; used to compute target volume",
+    )
+    parser.add_argument(
         "--verbose", "-v",
         action="count",
         default=0,
@@ -184,6 +191,9 @@ def main() -> int:
         ("est. rise", f"{progress.est_rise_pct:.0f}%"),
         ("target rise", f"{progress.target_rise_pct:.0f}%"),
     ]
+    if args.volume is not None:
+        target_volume = args.volume * (1 + progress.target_rise_pct / 100)
+        primary.append(("target volume", f"{args.volume:.0f} → {target_volume:.0f} mL"))
     _print_rows(primary)
 
     if args.meta:
