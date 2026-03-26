@@ -158,7 +158,7 @@ def main() -> int:
 
     if args.json:
         payload: dict = {
-            "bulk_start": args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z"),
+            "bulk_start": args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z"),
             "elapsed_minutes": round(progress.elapsed_hours * 60),
             "last_temp_f": progress.current_temp_f,
             "last_temp_age_minutes": age_min,
@@ -169,8 +169,8 @@ def main() -> int:
         if args.meta:
             diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
             payload["meta"] = {
-                "run_at": now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z"),
-                "last_reading": progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M:%S %p %Z"),
+                "run_at": now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z"),
+                "last_reading": progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z"),
                 "temperature_reading_count": progress.reading_count,
                 "min_temp_f": progress.min_temp_f,
                 "max_temp_f": progress.max_temp_f,
@@ -213,9 +213,9 @@ def main() -> int:
 
         print()
         meta = [
-            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M:%S %p %Z")),
-            ("bulk start", args.start.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M:%S %p %Z")),
-            ("last reading", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M:%S %p %Z")),
+            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")),
+            ("bulk start", args.start.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")),
+            ("last reading", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")),
             ("readings", str(progress.reading_count)),
             ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
             ("integral", f"{progress.integral:.4f}"),
