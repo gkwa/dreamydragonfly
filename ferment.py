@@ -189,10 +189,10 @@ def main() -> int:
         (f"temp ({age_str})", f"{progress.current_temp_f:.1f}°F"),
         ("avg temp", f"{progress.avg_temp_f:.1f}°F"),
         ("est. rise", f"{progress.est_rise_pct:.0f}%"),
-        ("target rise", f"{progress.target_rise_pct:.0f}%"),
+        ("target rise", f"{progress.target_rise_pct:.1f}%"),
     ]
     if args.volume is not None:
-        target_volume = args.volume * (1 + round(progress.target_rise_pct) / 100)
+        target_volume = args.volume * (1 + progress.target_rise_pct / 100)
         primary.append(("target volume", f"{args.volume:.0f} → {target_volume:.0f} mL"))
     _print_rows(primary)
 
