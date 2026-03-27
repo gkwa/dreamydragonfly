@@ -6,6 +6,7 @@ import json
 import logging
 import pathlib
 import sys
+import zoneinfo
 import dateparser
 
 import calculator as fermentation_calculator
@@ -13,18 +14,26 @@ import dough as dough_module
 import duration as duration_module
 import sensor as sensor_module
 
-LOCAL_TZ = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
-
 log = logging.getLogger(__name__)
 
 
-def _parse_start(value: str) -> datetime.datetime:
+def _local_tz_name() -> str:
+    return datetime.datetime.now().astimezone().strftime("%Z")
+
+
+def _resolve_local_tz(tz_arg: str | None) -> tuple[datetime.tzinfo, str]:
+    if tz_arg is not None:
+        return zoneinfo.ZoneInfo(tz_arg), tz_arg
+    return datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo, _local_tz_name()
+
+
+def _parse_start(value: str, tz_name: str) -> datetime.datetime:
     parsed = dateparser.parse(
         value,
         settings={
             "RETURN_AS_TIMEZONE_AWARE": True,
             "PREFER_DAY_OF_MONTH": "first",
-            "TIMEZONE": "America/Los_Angeles",
+            "TIMEZONE": tz_name,
         },
     )
     if parsed is None:
@@ -32,7 +41,7 @@ def _parse_start(value: str) -> datetime.datetime:
     return parsed
 
 
-def _resolve_end(value: str, start: datetime.datetime) -> datetime.datetime:
+def _resolve_end(value: str, start: datetime.datetime, tz_name: str) -> datetime.datetime:
     """
     Parse --end as either a duration offset from start (e.g. '11h') or an
     absolute/relative datetime (e.g. '2026-03-01 8pm', 'yesterday 9pm').
@@ -48,7 +57,7 @@ def _resolve_end(value: str, start: datetime.datetime) -> datetime.datetime:
         settings={
             "RETURN_AS_TIMEZONE_AWARE": True,
             "PREFER_DAY_OF_MONTH": "first",
-            "TIMEZONE": "America/Los_Angeles",
+            "TIMEZONE": tz_name,
         },
     )
     if parsed is None:
@@ -63,7 +72,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--start",
         required=True,
-        type=_parse_start,
+        type=str,
         metavar="TIME",
         help='when bulk fermentation began, e.g. "today 8am", "3 hours ago", "2026-01-22 11:09"',
     )
@@ -79,6 +88,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=pathlib.Path,
         metavar="PARQUET_PATH",
         help="path to sensor parquet file, e.g. /path/to/kindfinkitten/merged_data.parquet",
+    )
+    parser.add_argument(
+        "--timezone", "--tz",
+        default=None,
+        metavar="TZ",
+        help='IANA timezone name, e.g. "America/New_York" (default: system timezone)',
     )
     parser.add_argument(
         "--meta",
@@ -124,16 +139,19 @@ def main() -> int:
     log_level = {0: logging.WARNING, 1: logging.INFO}.get(args.verbose, logging.DEBUG)
     logging.basicConfig(level=log_level, stream=sys.stderr, format="%(levelname)s %(message)s")
 
+    LOCAL_TZ, tz_name = _resolve_local_tz(args.timezone)
+
+    start = _parse_start(args.start, tz_name)
+    end = _resolve_end(args.end, start, tz_name) if args.end else None
+
     log.info("loading parquet from %s", args.parquet_path)
 
-    end = _resolve_end(args.end, args.start) if args.end else None
-
     sensor = sensor_module.SensorData(args.parquet_path)
-    readings = sensor.readings_since(args.start, end)
+    readings = sensor.readings_since(start, end)
 
     if len(readings) == 0:
         print(
-            f"no sensor readings found since {args.start.astimezone(LOCAL_TZ).strftime('%Y-%m-%d %a %-I:%M %p %Z')}",
+            f"no sensor readings found since {start.astimezone(LOCAL_TZ).strftime('%Y-%m-%d %a %-I:%M %p %Z')}",
             file=sys.stderr,
         )
         return 1
@@ -145,11 +163,11 @@ def main() -> int:
     progress = calc.compute(readings)
 
     now_utc = datetime.datetime.now(datetime.timezone.utc)
-    start_local = args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z")
+    start_local = start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z")
     elapsed_end = end if end is not None else now_utc
-    elapsed_min = round((elapsed_end - args.start).total_seconds() / 60)
+    elapsed_min = round((elapsed_end - start).total_seconds() / 60)
     elapsed = _fmt_hm(elapsed_min)
-    data_min = round((progress.last_reading_at - args.start).total_seconds() / 60)
+    data_min = round((progress.last_reading_at - start).total_seconds() / 60)
     data_elapsed = _fmt_hm(data_min)
     age_min = round((now_utc - progress.last_reading_at).total_seconds() / 60)
     age_str = f"{age_min // 60}h{age_min % 60:2d}m ago" if age_min >= 60 else f"{age_min}m ago"
@@ -158,7 +176,7 @@ def main() -> int:
 
     if args.json:
         payload: dict = {
-            "bulk_start": args.start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z"),
+            "bulk_start": start.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p"),
             "elapsed_minutes": round(progress.elapsed_hours * 60),
             "last_temp_f": progress.current_temp_f,
             "last_temp_age_minutes": age_min,
@@ -169,8 +187,8 @@ def main() -> int:
         if args.meta:
             diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
             payload["meta"] = {
-                "run_at": now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z"),
-                "last_reading": progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p %Z"),
+                "run_at": now_utc.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p"),
+                "last_reading": progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %a %-I:%M %p"),
                 "temperature_reading_count": progress.reading_count,
                 "min_temp_f": progress.min_temp_f,
                 "max_temp_f": progress.max_temp_f,
@@ -199,8 +217,8 @@ def main() -> int:
     if args.meta:
         ref_min = round(ref_hours * 60)
         ref_duration = _fmt_hm(ref_min)
-        ref_end_abs = args.start + datetime.timedelta(hours=ref_hours)
-        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")
+        ref_end_abs = start + datetime.timedelta(hours=ref_hours)
+        ref_end_local = ref_end_abs.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p")
 
         data_diff_min = abs(round((ref_hours - progress.elapsed_hours) * 60))
         data_diff_str = _fmt_hm(data_diff_min)
@@ -213,9 +231,9 @@ def main() -> int:
 
         print()
         meta = [
-            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")),
-            ("bulk start", args.start.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")),
-            ("last reading", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p %Z")),
+            ("run at", now_utc.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p")),
+            ("bulk start", start.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p")),
+            ("last reading", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p")),
             ("readings", str(progress.reading_count)),
             ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
             ("integral", f"{progress.integral:.4f}"),
