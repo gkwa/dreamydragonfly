@@ -57,6 +57,7 @@ def _resolve_end(value: str, start: datetime.datetime, tz_name: str) -> datetime
         settings={
             "RETURN_AS_TIMEZONE_AWARE": True,
             "PREFER_DAY_OF_MONTH": "first",
+            "PREFER_DATES_FROM": "past",
             "TIMEZONE": tz_name,
         },
     )
