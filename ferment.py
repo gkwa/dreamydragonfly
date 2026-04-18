@@ -8,6 +8,7 @@ import pathlib
 import sys
 import zoneinfo
 import dateparser
+import dateutil.parser
 
 import calculator as fermentation_calculator
 import dough as dough_module
@@ -43,26 +44,26 @@ def _parse_start(value: str, tz_name: str) -> datetime.datetime:
 
 def _resolve_end(value: str, start: datetime.datetime, tz_name: str) -> datetime.datetime:
     """
-    Parse --end as either a duration offset from start (e.g. '11h') or an
-    absolute/relative datetime (e.g. '2026-03-01 8pm', 'yesterday 9pm').
-    Duration is tried first.
+    Parse --end as a duration offset from start (e.g. '11h'), a time anchored
+    to the start date (e.g. '5pm'), or a full datetime (e.g. '2026-03-01 8pm').
+    Duration is tried first, then dateutil with start as the default date.
+    If the parsed result is before start, one day is added (overnight ferments).
     """
     try:
         delta = duration_module.parse_duration(value)
         return start + delta
     except ValueError:
         pass
-    parsed = dateparser.parse(
-        value,
-        settings={
-            "RETURN_AS_TIMEZONE_AWARE": True,
-            "PREFER_DAY_OF_MONTH": "first",
-            "PREFER_DATES_FROM": "past",
-            "TIMEZONE": tz_name,
-        },
-    )
-    if parsed is None:
-        raise argparse.ArgumentTypeError(f"cannot parse end time: {value!r}")
+    try:
+        anchor = start.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+        parsed = dateutil.parser.parse(value, default=anchor)
+    except (ValueError, OverflowError) as exc:
+        raise argparse.ArgumentTypeError(f"cannot parse end time: {value!r}") from exc
+    local_tz = start.tzinfo
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=local_tz)
+    if parsed < start:
+        parsed += datetime.timedelta(days=1)
     return parsed
 
 
@@ -81,7 +82,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--end",
         default=None,
         metavar="TIME",
-        help='when bulk fermentation ended, e.g. "2026-03-01 8pm", "yesterday 9pm", or a duration from start like "11h"',
+        help='when bulk fermentation ended; time-only values (e.g. "5pm") are interpreted on the start date, rolling to the next day if before start; or use a full datetime (e.g. "2026-03-01 8pm") or a duration from start (e.g. "11h")',
     )
     parser.add_argument(
         "--parquet-path",
