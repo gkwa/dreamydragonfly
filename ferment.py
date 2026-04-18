@@ -238,7 +238,7 @@ def main() -> int:
             ("bulk start", start.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p")),
             ("last reading", progress.last_reading_at.astimezone(LOCAL_TZ).strftime("%m-%d %a %-I:%M %p")),
             ("readings", str(progress.reading_count)),
-            ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F"),
+            ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F ({progress.max_temp_f - progress.min_temp_f:.1f}°F)"),
             ("integral", f"{progress.integral:.4f}"),
             ("ref. duration", f"{ref_duration} (author's estimate at {progress.avg_temp_f:.1f}°F)"),
             ("ref. end time", ref_end_local),
