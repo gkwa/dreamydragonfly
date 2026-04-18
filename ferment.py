@@ -208,7 +208,7 @@ def main() -> int:
         ("data elapsed", data_elapsed),
         (f"temp ({age_str})", f"{progress.current_temp_f:.1f}°F"),
         ("avg temp", f"{progress.avg_temp_f:.1f}°F"),
-        ("temp range", f"{progress.max_temp_f - progress.min_temp_f:.1f}°F"),
+        ("temp range", f"{progress.min_temp_f:.1f}–{progress.max_temp_f:.1f}°F ({progress.max_temp_f - progress.min_temp_f:.1f}°F)"),
         ("est. rise", f"{progress.est_rise_pct:.0f}%"),
         ("target rise", f"{progress.target_rise_pct:.1f}%"),
     ]
